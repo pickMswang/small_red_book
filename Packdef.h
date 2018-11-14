@@ -1,11 +1,11 @@
-****
+
 #ifndef _PACKDEF_H
 #define _PACKDEF_H
 
-*****
+
 #define SERVER_IP   "192.168.137.133"
 typedef char   PackType;
-*****
+
 协议映射表
 #define BEGIN_PROTOCOL_MAP static const ProtocolMap m_ProtocolMapEntries[]= \
 {
@@ -13,9 +13,9 @@ typedef char   PackType;
 #define END_PROTOCOL_MAP 	{0,0} \
 };
 
-****
+
 #define PM(X,Y)  {X,Y},
-*****
+
 
 //边界值
 #define _DEF_SIZE		     	64
@@ -25,7 +25,7 @@ typedef char   PackType;
 
 
 
-***
+
 //
 #define _register_accountexists  0
 #define _register_success		 1
@@ -37,7 +37,7 @@ typedef char   PackType;
 
  
 
-***
+
 //协议
 #define _DEF_PROTOCOL_BASE		100
 
@@ -77,6 +77,6 @@ struct STRU_LOGIN_RQ
 	 
 };
 
-***
+
 
 #endif
