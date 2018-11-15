@@ -1,4 +1,3 @@
-
 #ifndef _PACKDEF_H
 #define _PACKDEF_H
 
@@ -6,7 +5,6 @@
 #define SERVER_IP   "192.168.137.133"
 typedef char   PackType;
 
-协议映射表
 #define BEGIN_PROTOCOL_MAP static const ProtocolMap m_ProtocolMapEntries[]= \
 {
 
@@ -19,7 +17,7 @@ typedef char   PackType;
 
 //边界值
 #define _DEF_SIZE		     	64
-#define _DEF_STREAMSIZE			1000
+#define _DEF_STREAMSIZE			10000
 #define _DEF_SQLLEN             300
 #define _DEF_BUFFERNUM          10000
 
@@ -36,6 +34,9 @@ typedef char   PackType;
 
 
  
+#define _publish_success      1
+#define _publish_fail         0
+
 
 
 //协议
@@ -46,7 +47,9 @@ typedef char   PackType;
 
 #define _DEF_PROTOCOL_LOGIN_RQ				 _DEF_PROTOCOL_BASE +3//登录请求
 #define _DEF_PROTOCOL_LOGIN_RS				 _DEF_PROTOCOL_BASE +4
+#define _DEF_PROTOCOL_PUBLISH_RQ                          _DEF_PROTOCOL_BASE +5//发布请求
 
+#define _DEF_PROTOCOL_PUBLISH_RS                         _DEF_PROTOCOL_BASE +5//发布回复
 
 //协议包
 
@@ -77,6 +80,20 @@ struct STRU_LOGIN_RQ
 	 
 };
 
+//发布请求
+struct STRU_PUBLISH_RQ
+{
+         PackType m_nType;
+   //  char m_szAccount[_DEF_SIZE];
+     char m_szSTREAM[_DEF_STREAMSIZE];
 
+};
+//发布回复
+struct STRU_PUBLISH_RS
+{
+     PackType m_nType;
+   //  char m_szAccount[_DEF_SIZE];
+     char m_szResult;
+};
 
 #endif
