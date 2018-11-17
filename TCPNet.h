@@ -1,143 +1,62 @@
-#include "TCPNet.h"
-
-TCPNet::TCPNet(TCPKernel* tcpKernel)
-{
-	m_pTCPKernel = tcpKernel;	
-	is_stop=false;
-	port=8000;
-}
-
-bool TCPNet::InitNetWork()   //EpollServer的初始化
-{
-	bzero(&bindAddr, sizeof(bindAddr));
-	bindAddr.sin_family = AF_INET;
-	bindAddr.sin_port = htons(port);
-	bindAddr.sin_addr.s_addr = inet_addr("172.20.10.2");  //创建Socket
-	sockfd = socket(AF_INET, SOCK_STREAM, 0);
-	if(sockfd < 0)
-	{
-		printf("EpollServer socket init error\n");
-		return false;
-	}
-	
-	//绑定
-	int ret = bind(sockfd, (struct sockaddr *)&bindAddr, sizeof(bindAddr));
-	if(ret < 0)
-	{
-		printf("EpollServer bind init error\n");
-		return false;
-	}
-	
-	//监听
-	ret = listen(sockfd, 10);
-	if(ret < 0)
-	{
-		printf("EpollServer listen init error\n");
-		return false;
-	}
-	
-    //创建Epoll
-	epollfd = epoll_create(1024);
-	if(epollfd < 0)
-	{
-		printf("EpollServer epoll_create init error\n");
-		return false;
-	}
-
-//	pool = new threadpool<BaseTask>(threadnum);  //创建线程池
-
-	//将sockfd加入epoll
-	return true;
-}
-
-void TCPNet::DealData()
-{
-	//将sockfd加入epoll
-	addfd(epollfd, sockfd, false);
-
-	//epoll开始监听IO请求
-	while(!is_stop)
-	{
-		int ret = epoll_wait(epollfd, events, MAX_EVENT, -1);
-		if(ret < 0)  //出错处理
-		{
-			printf("epoll_wait error\n");
-			break;
-		}
-		for(int i = 0; i < ret; ++i)
-		{
-			int fd = events[i].data.fd;
-			if(fd == sockfd)  //新的连接到来
-			{
-				struct sockaddr_in clientAddr;
-				socklen_t len = sizeof(clientAddr);
-				//accept连接请求
-				int confd = accept(sockfd, (struct sockaddr *)
-					&clientAddr, &len);
+#pragma once
+#include"head.h"
+#include "thread_pool.h"
+#include "TCPKernel.h"
  
-				//将新的confd加入epoll中
-				TCPNet::addfd(epollfd, confd, false);
-			}
-			else if(events[i].events & EPOLLIN)  //某个fd上有数据可读
-			{
-				char buffer[MAX_BUFFER];
-		readagain:	memset(buffer, 0, sizeof(buffer));
-				int ret = recv(fd, buffer, MAX_BUFFER - 1,0);
-				//某个fd关闭了连接，从Epoll中删除并关闭fd
-				if(ret == 0)
-				{
-					struct epoll_event ev;
-					ev.events = EPOLLIN;
-					ev.data.fd = fd;
-					epoll_ctl(epollfd, EPOLL_CTL_DEL, fd, &ev);
-					shutdown(fd, SHUT_RDWR);
-					printf("%d logout\n", fd);
-					continue;
-				}
-				//读取出错，尝试再次读取
-				else if(ret < 0)
-				{
-					if(errno == EAGAIN)	
-					{
-						printf("read error! read again\n");
-						goto readagain;
-					    	break;
-					}
-				}
-				//成功读取，将读取信息发送给中介者
-				else
-				{
-					/*BaseTask *task = new Task(buffer, fd);
-					pool->append_task(task);*/
-					m_pTCPKernel->DealData(fd,buffer);
-				}
-			}
-			else
-			{
-				printf("something else had happened\n");
-			}
-		}
+#define MAX_EVENT 1024   //epoll_events的最大个数
+#define MAX_BUFFER 2048  //Buffer的最大字节
+class TCPKernel;
+class TCPNet
+{
+private:
+	bool is_stop;   //是否停止epoll_wait的标志
+	//int threadnum;   //线程数目
+	int sockfd;     //监听的fd
+	int port;      //端口
+	int epollfd;    //Epoll的fd
+public:
+    TCPKernel* m_pTCPKernel;
+	//threadpool<BaseTask> *pool;   //线程池的指针
+	//char address[20];
+	epoll_event events[MAX_EVENT];  //epoll的events数组
+	struct sockaddr_in bindAddr;   //绑定的sockaddr
+ 
+public:
+	//构造函数
+	TCPNet(TCPKernel*tcpKernel);
+	
+	//析构
+	virtual ~TCPNet(){}	
+
+ 	//创建Socket 绑定 监听 创建Epoll
+	bool InitNetWork();
+
+	void UnInitNetWork();
+ 	
+	void DealData();
+
+	bool SendData(int sockfd, char* szbuf, int nlen);	
+ 
+	static int setnonblocking(int fd)  //将fd设置称非阻塞
+	{
+		int old_option = fcntl(fd, F_GETFL);
+		int new_option = old_option | O_NONBLOCK;
+		fcntl(fd, F_SETFL, new_option);
+		return old_option;
 	}
-}
+ 
+	static void addfd(int epollfd, int sockfd, bool oneshot)  //向Epoll中添加fd
+	{//oneshot表示是否设置称同一时刻，只能有一个线程访问fd，数据的读取都在主线程中，所以调用都设置成false
+		epoll_event event;
+		event.data.fd = sockfd;
+		event.events = EPOLLIN | EPOLLET;
+		if(oneshot)
+		{
+			event.events |= EPOLLONESHOT;
+		}
+		epoll_ctl(epollfd, EPOLL_CTL_ADD, sockfd, &event); //添加fd
+		TCPNet::setnonblocking(sockfd);
+	}
+};
 
-bool TCPNet::SendData(int sockfd, char* szbuf, int nlen)
-{
-	if(!szbuf || nlen <= 0)
-		return false;
-	
-	//发送包的大小
-	if(write(sockfd,(const char*)&nlen,sizeof(int)) < 0)
-		return false;
-	
-	//发送包的内容
-	if(write(sockfd, szbuf, nlen) < 0)
-		return false;
 
-	return true;
-}
-
-void TCPNet::UnInitNetWork()
-{
-	close(sockfd);
-	close(epollfd);
-}	
