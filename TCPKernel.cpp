@@ -21,15 +21,19 @@ BEGIN_PROTOCOL_MAP
 END_PROTOCOL_MAP
 void TCPKernel::PublishRq(int sockfd,char*szbuf)
 {
-	printf("lalalal\n");
-        int len =strlen(szbuf)-1;
-	printf("%d\n",len);	
+//	printf("lalalal\n");
+        //int len =strlen(szbuf)-1;
+//	printf("%d\n",len);	
         STRU_PUBLISH_RQ *pspr=(STRU_PUBLISH_RQ*)szbuf;
 
 	//memcpy(pspr->m_szSTREAM,,_DEF_STREAMSIZE);
-        
-        int fd=open("temp.png",O_RDWR|O_CREAT,0775);
-        write(fd,pspr->m_szSTREAM,len); 
+       // for(int i=0;i<1024;i++)
+	//	{
+//			cout<<pspr->m_szSTREAM[i]<<"*";
+//		}
+  //      cout<<endl;
+        int fd=open("temp.png",O_RDWR|O_CREAT,0777);
+        write(fd,pspr->m_szSTREAM,199); 
 //        STRU_PUBLISH_RS spr;
   //      spr.m_nType=_DEF_PROTOCOL_PUBLISH_RS;
     //    spr.m_szResult=_publish_success ;
@@ -104,14 +108,14 @@ void TCPKernel::LoginRq(int sockfd,char* szbuf)
 //注册请求
 void TCPKernel::RegisterRq(int sockfd,char* szbuf)
 {
-//	printf("register\n");
+	printf("register\n");
 	char result[1024];
     printf("registerRq szbuf %d\n",strlen(szbuf));	
 	STRU_REGISTER_RQ *psrr = (STRU_REGISTER_RQ *)szbuf;
 	char szsql[_DEF_SQLLEN] = {0};
 	STRU_REGISTER_RS srr;
 	srr.m_nType = _DEF_PROTOCOL_REGISTER_RS;
-	memcpy(srr.m_szAccount,psrr->m_szPassword,_DEF_SIZE);
+	memcpy(srr.m_szAccount,psrr->m_szAccount,_DEF_SIZE);
 	list<string> lststr;
 	
 	
