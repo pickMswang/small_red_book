@@ -2,9 +2,12 @@
 
 TCPNet::TCPNet(TCPKernel* tcpKernel)
 {
+//	printf("TCPNet init\n");
 	m_pTCPKernel = tcpKernel;	
-	is_stop=false;
+    is_stop=false;
 	port=8000;
+	pool=NULL;
+	threadnum=2;
 }
 
 bool TCPNet::InitNetWork()   //EpollServer的初始化
@@ -12,7 +15,7 @@ bool TCPNet::InitNetWork()   //EpollServer的初始化
 	bzero(&bindAddr, sizeof(bindAddr));
 	bindAddr.sin_family = AF_INET;
 	bindAddr.sin_port = htons(port);
-	bindAddr.sin_addr.s_addr = inet_addr("172.20.10.2");  //创建Socket
+	bindAddr.sin_addr.s_addr = inet_addr("10.50.66.241");  //创建Socket
 	sockfd = socket(AF_INET, SOCK_STREAM, 0);
 	if(sockfd < 0)
 	{
@@ -43,15 +46,24 @@ bool TCPNet::InitNetWork()   //EpollServer的初始化
 		printf("EpollServer epoll_create init error\n");
 		return false;
 	}
-
-//	pool = new threadpool<BaseTask>(threadnum);  //创建线程池
+	pool = new threadpool<BaseTask>(threadnum);  //创建线程池
 
 	//将sockfd加入epoll
 	return true;
 }
 
+void Task::doit()
+{
+		//do something of the order
+		//printf("%s\n", order);
+	        //write(sockfd, order, strlen(order));
+	//	snprintf(order, MAX_BUFFER - 1,);
+        m_TCPKernel->DealData(sockfd,order);
+}
+
 void TCPNet::DealData()
 {
+	pool->start();
 	//将sockfd加入epoll
 	addfd(epollfd, sockfd, false);
 
@@ -106,10 +118,16 @@ void TCPNet::DealData()
 				}
 				//成功读取，将读取信息发送给中介者
 				else
-				{
-					/*BaseTask *task = new Task(buffer, fd);
-					pool->append_task(task);*/
-					m_pTCPKernel->DealData(fd,buffer);
+				{ //printf("aaa\n");
+					BaseTask *task = new Task(buffer,fd,m_pTCPKernel);
+					pool->append_task(task);
+	//				
+	//		        for(int i=0;i<2048;i++)
+	//				{
+	//					cout<<buffer[i]<<"-";
+	//				}
+	//				cout<<endl;
+			//		m_pTCPKernel->DealData(fd,buffer);
 				}
 			}
 			else
@@ -118,6 +136,7 @@ void TCPNet::DealData()
 			}
 		}
 	}
+//	pool->stop();
 }
 
 bool TCPNet::SendData(int sockfd, char* szbuf, int nlen)
