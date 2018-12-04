@@ -1,7 +1,5 @@
 
 #pragma once
-//#ifndef _TCPKERNEL_H
-//#define _TCPKERNEL_H
 #include "CMySql.h"
 #include "TCPNet.h"
 #include "thread_pool.h"
