@@ -1,58 +1,32 @@
-
 #pragma once
-#include "CMySql.h"
-#include "TCPNet.h"
-#include "thread_pool.h"
-#include "Packdef.h"
+#include"Mysql.h"
+#include"TCPNet.h"
+#include"threadpool.h"
+#include"Packdef.h"
 class TCPKernel;
 class TCPNet;
 class CMySql;
-//class threadpool;
-typedef void (TCPKernel:: *PFUN)(int ,char*);
+typedef void (TCPKernel::*PFUN)(int ,char*);
 struct ProtocolMap
 {
-	    PackType m_nType;
-		PFUN     m_pfun;
+	PackType m_nType;
+	PFUN     m_pfun;
 };
-
 
 class TCPKernel
 {
 public:
 	TCPKernel();
-   virtual ~TCPKernel();
+	virtual ~TCPKernel();
 public:
-	 bool Open() ;
-	 void Close() ;
-	 void DealData(int sockfd,char* szbuf) ;
+	bool Open();
+	void Close();
+	void DealData(int sockfd,char* szbuf) ;
 public:
 	void RegisterRq(int sockfd,char* szbuf);
 	void LoginRq(int sockfd,char* szbuf);
 	void PublishRq(int sockfd,char* szbuf);
-public:
-	TCPNet *m_pTcpNet;
 private:
+	TCPNet* m_pTcpNet;
 	CMySql m_sql;
-//	threadpool m_threadpool;
-
-
 };
-
-/*class RedItask
-{
-public:
-	    RedItask(int sockfd,TCPKernel*pKernel)
-		{
-			m_sockfd = sockfd;
-	
-			m_pKernel = pKernel;
-		}
-		~RedItask(){}
-		void RunItask();
-private:
-										
-		int  m_sockfd;											
-	    TCPKernel* m_pKernel;
-
-};*/
-//#endif
