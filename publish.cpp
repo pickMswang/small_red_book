@@ -74,6 +74,7 @@ void Publish::on_pushButton_clicked()
     //ui->Publish->label->setPixmap(QPixmap::fromImage(image));
     ui->label->setPixmap(QPixmap::fromImage(image));
 }
+
 void Publish::ShowMsg(char* msg)
 {
    /* QMessageBox messageBox;
@@ -88,17 +89,32 @@ void Publish::ShowMsg(char* msg)
     else
         qDebug()<<"publish fail";*/
 }
+
 //发布
 void Publish::on_pushButton_2_clicked()
 {
-     STRU_PUBLISH_RQ spr;
-     spr.m_nType =_DEF_PROTOCOL_PUBLISH_RQ;
-     int len=m_nBuffSize;
-   //  while(lena)
-     memcpy(spr.m_szSTREAM,m_pBuff,m_nBuffSize);
-    // sprintf(spr.m_szSTREAM,m_pBuff);
-   // tcpKernel->SendData((char *)&spr,m_nBuffSize+1);
-     tcpKernel->SendData((char *)&spr,sizeof(spr));
-    // qDebug()<<m_nBuffSize;
-   //qDebug()<<sizeof(spr);
+    STRU_PUBLISH_RQ spr;
+    qDebug()<<m_nBuffSize<<endl;
+    int index = 0;
+    while((index+2034) < m_nBuffSize)
+    {
+        memset(spr.m_szSTREAM,'0',sizeof(spr.m_szSTREAM));
+        spr.m_nType =_DEF_PROTOCOL_PUBLISH_RQ;
+        spr.fin = 0;
+        spr.length = 2034;
+        memcpy(spr.m_szSTREAM,m_pBuff+index,2034);
+        tcpKernel->SendData((char *)&spr,sizeof(spr));
+        index += 2034;
+        qDebug()<<index<<endl;
+       // Sleep(50);
+    }
+    spr.fin = 1;
+    spr.length = m_nBuffSize - index;
+    spr.m_nType =_DEF_PROTOCOL_PUBLISH_RQ;
+    memcpy(spr.m_szSTREAM,m_pBuff+index,m_nBuffSize - index);
+    tcpKernel->SendData((char *)&spr,sizeof(spr));
+    qDebug()<<sizeof(spr)<<endl;
+    //qDebug()<<m_nBuffSize - index<<endl;
+    /*delete m_pBuff;
+    m_pBuff = NULL;*/
 }
