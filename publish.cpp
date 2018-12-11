@@ -25,10 +25,10 @@ void Publish::on_pushButton_5_clicked()
 {
     close();
 }
+
 //选择图片
 void Publish::on_pushButton_clicked()
 {
-
     //获取图片文件
     QString strFileName = QFileDialog::getOpenFileName(this, tr("Open Image"), ".", tr("Image Files(*.jpg *.png *.bmp)"));
     if (strFileName.isEmpty())
@@ -94,27 +94,41 @@ void Publish::ShowMsg(char* msg)
 void Publish::on_pushButton_2_clicked()
 {
     STRU_PUBLISH_RQ spr;
+    STRU_HEADER shead;
     qDebug()<<m_nBuffSize<<endl;
     int index = 0;
-    while((index+2034) < m_nBuffSize)
+    while((index+1024) < m_nBuffSize)
     {
         memset(spr.m_szSTREAM,'0',sizeof(spr.m_szSTREAM));
         spr.m_nType =_DEF_PROTOCOL_PUBLISH_RQ;
-        spr.fin = 0;
-        spr.length = 2034;
-        memcpy(spr.m_szSTREAM,m_pBuff+index,2034);
-        tcpKernel->SendData((char *)&spr,sizeof(spr));
-        index += 2034;
+        //spr.fin = 0;
+        memcpy(spr.m_szSTREAM,m_pBuff+index,1024);
+        spr.length = 1024;
+        //发数据包头
+        shead.pac_size = sizeof(spr);
+        qDebug()<<shead.pac_size<<endl;
+        while(tcpKernel->SendData((char *)&shead,sizeof(STRU_HEADER)) < 0)
+        {
+           // Sleep(30);
+        }
+        //Sleep(50);
+        //发实际数据包
+        while(tcpKernel->SendData((char *)&spr,sizeof(STRU_PUBLISH_RQ)) < 0)
+        {
+           // Sleep(30);
+        }
+        index += 1024;
         qDebug()<<index<<endl;
-       // Sleep(50);
     }
-    spr.fin = 1;
-    spr.length = m_nBuffSize - index;
+    //spr.fin = 1;
+    memset(spr.m_szSTREAM,'0',sizeof(spr.m_szSTREAM));
     spr.m_nType =_DEF_PROTOCOL_PUBLISH_RQ;
     memcpy(spr.m_szSTREAM,m_pBuff+index,m_nBuffSize - index);
-    tcpKernel->SendData((char *)&spr,sizeof(spr));
-    qDebug()<<sizeof(spr)<<endl;
-    //qDebug()<<m_nBuffSize - index<<endl;
-    /*delete m_pBuff;
-    m_pBuff = NULL;*/
+    spr.length = m_nBuffSize - index;
+    //发数据包头
+    shead.pac_size = sizeof(STRU_PUBLISH_RQ);
+    while(tcpKernel->SendData((char *)&shead,sizeof(STRU_HEADER)) < 0);
+    //发实际数据包
+    while(tcpKernel->SendData((char *)&spr,sizeof(STRU_PUBLISH_RQ)) < 0);
+    qDebug()<<m_nBuffSize - index<<endl;
 }
