@@ -22,14 +22,22 @@ END_PROTOCOL_MAP
 void TCPKernel::PublishRq(int sockfd,char*szbuf)
 {
 
-   STRU_PUBLISH_RQ *pspr=(STRU_PUBLISH_RQ*)szbuf;
+   STRU_PUBLISH_RQ *pstr=(STRU_PUBLISH_RQ*)szbuf;
 
 	//memcpy(pspr->m_szSTREAM,,_DEF_STREAMSIZE);
 	int fd;
-	printf("%d",sizeof(*pspr));
-    fd=open("cheer.jpg",O_RDWR|O_CREAT|O_APPEND,0777);
-	printf("%d\n",pspr->length);
-    write(fd,pspr->m_szSTREAM,pspr->length); 
+    while(1)
+	{
+		fd = open("cheer.jpg",O_RDWR|O_CREAT|O_APPEND,0777);
+		if(fd > 0)
+			break;
+		else
+			printf("打不开\n");
+	}
+    printf("%d\n",pstr->length);
+	printf("%d\n",fd);
+	write(fd,pstr->m_szSTREAM,pstr->length); 
+	close(fd);
 }
 
 void TCPKernel::LoginRq(int sockfd,char*szbuf)
@@ -65,6 +73,7 @@ void TCPKernel::LoginRq(int sockfd,char*szbuf)
 }
 void TCPKernel::RegisterRq(int sockfd,char*szbuf)
 {
+	//printf("666\n");
 	char result[1024];
 	STRU_REGISTER_RQ *psrr=(STRU_REGISTER_RQ*)szbuf;
 	char szsql[_DEF_SQLLEN]={0};
@@ -115,12 +124,15 @@ void TCPKernel::Close()
 }
 void TCPKernel::DealData(int sockfd,char*szbuf)
 {
+	//printf("666\n");
 	PackType *pType=(PackType*)szbuf;
+	printf("%c\n",*pType);
 	int i =0;
 	while(1)
 	{
 		if(m_ProtocolMapEntries[i].m_nType==*pType)
 		{
+			//printf("%c\n",m_ProtocolMapEntries[i].m_nType);
 			(this->*m_ProtocolMapEntries[i].m_pfun)(sockfd,szbuf);
 			break;
 
